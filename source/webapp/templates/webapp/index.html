@@ -1,0 +1,195 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/style.css" %}">
+    <title>Document</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% if user.is_authenticated %}
+           {% block nav %}{% endblock nav %}
+           <li class="menu-right"><a href="{% url 'accounts:logout' %}?next={{ request.get_full_path }}" class="nav-link">Logout</a></li>
+       {% else %}
+           <li class="menu-right"><a href="{% url 'accounts:login' %}?next={{ request.get_full_path }}" class="nav-link">Login</a></li>
+       {% endif %}
+{#      <li class="menu-right"><a onclick="list_function(event)" href="{% url 'api/quotes' %}">Main menu</a></li>#}
+{#      <li class="menu-right"><a href="">Add quote</a></li>#}
+          <button class="quotes_list"><a onclick="list_function(event)" >Main menu</a></button>
+         <button id="add_quote"><a href="">Add quote</a></button>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+
+    <div class="container" id="container">
+
+    </div>
+
+<script>
+    let container = document.getElementById('container')
+    const base_url = 'http://localhost:8001/api/quotes/'
+
+
+    async function makeRequest(url, method='GET') {
+        let response = await fetch(url, {method});
+
+        if (response.ok) {  // нормальный ответ
+            return await response.json();
+        } else {            // ошибка
+            let error = new Error(response.statusText);
+            error.response = response;
+            throw error;
+        }
+    }
+
+    list_function = async(event)=>{
+        if (!document.getElementById('maindiv')){
+            try{
+            event.preventDefault()
+            {#prev = document.getElementById('block')#}
+            {#container.removeChild(prev)#}
+            let mainDiv = document.createElement("div")
+            mainDiv.id = 'maindiv'
+            let quotes = await makeRequest(base_url)
+            {#console.log(quotes)#}
+            for (let i of quotes) {
+                let quote = document.createElement("div")
+
+                let quoteText = document.createElement("p")
+                let quoteAuthor = document.createElement("p")
+                let quoteCreatedAt = document.createElement("p")
+                let link = document.createElement("a")
+                link.href = `${base_url}${i['id']}/`
+                link.dataset.id = i['id']
+                console.log(link.href)
+                link.innerHTML = i['text']
+                quoteText.appendChild(link)
+                link.onclick = detail_function
+                quoteAuthor.innerHTML = i['author']
+                quoteCreatedAt.innerHTML = i['created_at']
+                quote.appendChild(link)
+                quote.appendChild(quoteAuthor)
+                quote.appendChild(quoteCreatedAt)
+                mainDiv.appendChild(quote)
+
+            }
+            container.appendChild(mainDiv)
+        }
+        catch (error){
+            console.log(error )
+        }
+        }
+
+    }
+
+    detail_function = async(event)=>{
+        try {
+            event.preventDefault()
+            let i = event.target.dataset.id
+            prev = document.getElementById('maindiv')
+            container.removeChild(prev)
+            let url = event.target.href
+            console.log(url)
+            let data = await makeRequest(url)
+            console.log(data)
+            let block = document.createElement("div")
+            block.id = 'block'
+            let quoteText = document.createElement("p")
+            let quoteAuthor = document.createElement("p")
+            let quoteCreatedAt = document.createElement("p")
+            let quoteEmail = document.createElement("p")
+            let buttons = document.createElement('div')
+            let plusButton = document.createElement('a')
+            let minusButton = document.createElement('a')
+            let rating  = document.createElement('p')
+            rating.id = 'rating'
+            plusButton.innerHTML = '+'
+            minusButton.innerHTML = '-'
+            plusButton.onclick = increase_rating
+            minusButton.onclick = decrease_rating
+            plusButton.className = 'plusButton'
+            minusButton.className = 'minusButton'
+            plusButton.href = `${base_url}${i}/increase/`
+            minusButton.href = `${base_url}${i}/decrease`
+            buttons.appendChild(plusButton)
+            buttons.appendChild(minusButton)
+            quoteText.innerHTML = `Quote: ${data['text']}`
+            quoteAuthor.innerHTML = `Author: ${data['author']}`
+            rating.innerHTML = `Rating: ${data['sum_rating']}`
+            quoteEmail.innerHTML = `Email: ${data['email']}`
+            quoteCreatedAt.innerHTML = `Created_at: ${data['created_at']}`
+            block.appendChild(quoteText)
+            block.appendChild(quoteAuthor)
+            block.appendChild(quoteCreatedAt)
+            block.appendChild(quoteEmail)
+            block.appendChild(buttons)
+            block.appendChild(rating)
+            container.appendChild(block)
+        }
+        catch(error){
+            console.log(error)
+    }
+    }
+
+
+
+
+        increase_rating = async(event)=>{
+        try{
+            event.preventDefault()
+            let rating = document.getElementById('rating')
+            let a = event.target;
+            console.log(a)
+            let url = a.getAttribute('href')
+            let result = await makeRequest(url)
+            console.log(result)
+            let buttons = a.parentElement
+            let but2 = buttons.getElementsByClassName('minusButton')
+            but2[0].style.display='block';
+            a.style.display='none';
+            rating.innerText = 'Total Rating : ' + result
+        }
+        catch (error){
+            console.log(error)
+        }
+    }
+
+
+    decrease_rating = async(event)=>{
+        try{
+            event.preventDefault()
+            let rating = document.getElementById('rating')
+            let a = event.target;
+            console.log(a)
+            let url = a.getAttribute('href')
+            let result = await makeRequest(url)
+            console.log(result)
+            let buttons = a.parentElement
+            let but2 = buttons.getElementsByClassName('plusButton')
+            but2[0].style.display='block';
+            a.style.display='none';
+            rating.innerText = 'Total Rating : ' + result
+        }
+        catch (error){
+            console.log(error)
+        }
+    }
+
+</script>
+</body>
+</html>

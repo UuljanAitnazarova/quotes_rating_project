@@ -9,6 +9,12 @@ class Quote(models.Model):
     is_moderated = models.BooleanField(blank=False, null=False, default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     users = models.ManyToManyField(get_user_model(), through='api.Rating')
+    sum_rating = models.IntegerField(default=0)
+
+    class Meta:
+        permissions = [
+            ('can_view_non_moderated_quotes', 'Can_view_non_moderated_quotes')
+        ]
 
 
 
